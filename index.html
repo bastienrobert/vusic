@@ -5,15 +5,22 @@
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<meta http-equiv="X-UA-Compatible" content="ie=edge">
-	<title>Document</title>
+	<title>Sound experience</title>
 	<link rel="stylesheet" href="style.css">
 </head>
 
 <body>
-	<div id="center">
-		<h1>Click to start 🙉</h1>
-	</div>
-	<audio id="audio" src="HANDBRAEKES - discow.mp3" controls></audio>
+	<section id="ui">
+		<div id="center">
+			<h1 id="text"></h1>
+		</div>
+		<div id="loader">
+			<label for="file">Click to load</label>
+			<input type="file" id="file" name="file">
+			<span id="name"></span>
+		</div>
+	</section>
+	<audio id="audio" controls></audio>
 	<canvas id="canvas"></canvas>
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/gl-matrix/2.7.1/gl-matrix-min.js"></script>
 	<script src="simplex-noise.js"></script>

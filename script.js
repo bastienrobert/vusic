@@ -3,9 +3,21 @@ class App {
     this.canvas = document.getElementById('canvas')
     this.ctx = this.canvas.getContext('2d')
     this.ui = {
-      center: document.getElementById('center')
+      global: document.getElementById('ui'),
+      audio: document.getElementById('audio'),
+      center: document.getElementById('center'),
+      text: document.getElementById('text'),
+      loader: document.getElementById('loader'),
+      file: document.getElementById('file'),
+      name: document.getElementById('name')
+    }
+    this.texts = {
+      choose: 'Choose a song 💿',
+      click: 'Click to play 🙉',
+      resume: 'Click to resume 🌝'
     }
 
+    this.controls = 3
     this.gridSize = 30
     this.bpm = 132
     this.grid = vec2.create()
@@ -19,12 +31,23 @@ class App {
     this.deltaTime = 0
     this.currentTime = 0
 
-    this.music = new Music('Floorplan - Never Grow Old.mp3')
+    this.ui.text.innerHTML = this.texts.choose
 
     window.addEventListener('resize', this.onResize.bind(this))
     document.addEventListener('click', this.onClick.bind(this))
+    document.addEventListener('mousemove', this.onMouseMove.bind(this))
+    this.ui.file.addEventListener('change', this.setSong.bind(this))
 
     this.onResize()
+  }
+
+  setSong() {
+    const file = this.ui.file.files[0]
+    if (!file || file.type !== 'audio/mp3') return
+
+    this.music = new Music(this.ui.audio, file)
+    this.ui.name.innerHTML = file.name
+    this.ui.text.innerHTML = this.texts.click
     this.animate()
   }
 
@@ -62,14 +85,16 @@ class App {
     this.music.audio.muted = false
     this.music.play = true
 
-    this.ui.center.classList.add('hidden')
+    this.ui.global.classList.add('hidden')
   }
 
   pause() {
     this.music.audio.pause()
     this.music.play = false
+    this.ui.text.innerHTML = this.texts.resume
 
-    this.ui.center.classList.remove('hidden')
+    this.ui.audio.classList.remove('visible')
+    this.ui.global.classList.remove('hidden')
   }
 
   animate() {
@@ -91,8 +116,13 @@ class App {
     }
 
     if (this.music.play) {
+      this.controls = this.controls - this.deltaTime
       const kick = data[140] > 140
       this.setDots(data, kick)
+    }
+
+    if (this.controls <= 0) {
+      this.ui.audio.classList.remove('visible')
     }
   }
 
@@ -158,7 +188,15 @@ class App {
     this.createDots()
   }
 
+  onMouseMove() {
+    if (this.controls < 0 && this.music.play) {
+      this.controls = 3
+      this.ui.audio.classList.add('visible')
+    }
+  }
+
   onClick() {
+    if (!this.music) return
     this.music.play ? this.pause() : this.play()
   }
 }
@@ -243,8 +281,10 @@ class Dot {
 }
 
 class Music {
-  constructor() {
-    this.audio = document.getElementById('audio')
+  constructor(el, file) {
+    this.audio = el
+    this.audio.src = ''
+    this.audio.src = URL.createObjectURL(file)
     this.audio.crossOrigin = 'anonymous'
     this.play = false
     this.ctx = new (window.AudioContext ||
