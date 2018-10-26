@@ -9,12 +9,14 @@ class App {
       text: document.getElementById('text'),
       loader: document.getElementById('loader'),
       file: document.getElementById('file'),
+      sample: document.getElementById('sample'),
       name: document.getElementById('name')
     }
     this.texts = {
       choose: 'Choose a song 💿',
       click: 'Click to play 🙉',
-      resume: 'Click to resume 🌝'
+      resume: 'Click to resume 🌝',
+      sample: 'Floorplan - Never grow old'
     }
 
     this.controls = 3
@@ -32,13 +34,20 @@ class App {
     this.currentTime = 0
 
     this.ui.text.innerHTML = this.texts.choose
+    this.ui.sample.innerHTML = this.texts.sample
 
     window.addEventListener('resize', this.onResize.bind(this))
     document.addEventListener('click', this.onClick.bind(this))
     document.addEventListener('mousemove', this.onMouseMove.bind(this))
     this.ui.file.addEventListener('change', this.setSong.bind(this))
+    this.ui.sample.addEventListener('click', this.setSample.bind(this))
 
     this.onResize()
+
+    this.ui.audio.addEventListener('ended', () => {
+      this.ui.audio.currentTime = 0
+      this.pause()
+    })
   }
 
   setSong() {
@@ -47,8 +56,24 @@ class App {
 
     this.music = new Music(this.ui.audio, file)
     this.ui.name.innerHTML = file.name
+    this.ui.sample.classList.remove('active')
+    this.ui.sample.classList.add('hidden')
     this.ui.text.innerHTML = this.texts.click
     this.animate()
+  }
+
+  setSample() {
+    this.ui.sample.classList.add('active')
+
+    fetch(
+      'https://res.cloudinary.com/bastienrobert/video/upload/v1540562732/Floorplan_-_Never_Grow_Old_wt3mkg.mp3'
+    )
+      .then(res => res.blob())
+      .then(file => {
+        this.music = new Music(this.ui.audio, file)
+        this.ui.text.innerHTML = this.texts.click
+        this.animate()
+      })
   }
 
   createVectors() {
@@ -295,6 +320,7 @@ class Music {
 
   init() {
     const source = this.ctx.createMediaElementSource(audio)
+
     const gainNode = this.ctx.createGain()
     source.connect(gainNode)
     gainNode.connect(this.ctx.destination)

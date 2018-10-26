@@ -17,6 +17,30 @@ body {
   transition: opacity 0.4s;
 }
 
+.button {
+  display: inline-block;
+  background-color: #fff;
+  color: #000;
+  font-size: 16px;
+  padding: 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  user-select: none;
+  opacity: 1;
+  transition: background-color 0.2s, color 0.2s, opacity 0.2s;
+}
+
+.button.active {
+  background-color: #db2d43;
+  color: #fff;
+  pointer-events: none;
+  cursor: inherit;
+}
+
+.button.hidden {
+  opacity: 0;
+}
+
 #ui.hidden {
   opacity: 0;
 }
@@ -40,15 +64,6 @@ body {
   align-items: center;
   bottom: 10px;
   left: 10px;
-}
-
-#loader label {
-  display: inline-block;
-  background-color: #fff;
-  color: #000;
-  font-size: 16px;
-  padding: 8px;
-  border-radius: 4px;
 }
 
 #loader input[type='file'] {
