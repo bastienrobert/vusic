@@ -1,0 +1,33 @@
+html,
+body {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+#audio {
+  position: absolute;
+  bottom: 0;
+}
+
+#center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #fff;
+  font-family: sans-serif;
+  user-select: none;
+}
+
+#center h1 {
+  perspective: 100px;
+  opacity: 1;
+  transform: translateY(0px) rotateX(0deg);
+  transition: transform 0.4s, opacity 0.35s;
+}
+
+#center.hidden h1 {
+  opacity: 0;
+  transform: translateY(-60px) rotateX(90deg);
+}

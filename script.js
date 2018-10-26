@@ -1,26 +1,19 @@
-// TODO
-// - Set the acceleration
-// - Background color alpha between grey and black
-// - Popup to ask user to click
-
-// BUGFIX
-// - Sometimes, vector field is doing shit
-
 class App {
   constructor() {
     this.canvas = document.getElementById('canvas')
     this.ctx = this.canvas.getContext('2d')
+    this.ui = {
+      center: document.getElementById('center')
+    }
 
-    this.gridSize = 40
+    this.gridSize = 30
+    this.bpm = 132
     this.grid = vec2.create()
     this.noise = new SimplexNoise()
     this.init()
   }
 
   init() {
-    window.addEventListener('resize', this.onResize.bind(this))
-    this.onResize()
-
     this.now = Date.now()
     this.lastTime = this.now
     this.deltaTime = 0
@@ -28,8 +21,10 @@ class App {
 
     this.music = new Music('Floorplan - Never Grow Old.mp3')
 
-    this.createVectors()
-    this.createDots()
+    window.addEventListener('resize', this.onResize.bind(this))
+    document.addEventListener('click', this.onClick.bind(this))
+
+    this.onResize()
     this.animate()
   }
 
@@ -43,8 +38,8 @@ class App {
         const position = vec2.fromValues(i * x + x / 2, j * y + y / 2)
         const angle =
           (this.noise.noise2D(
-            position[0] / 15000 + this.currentTime / 3,
-            position[1] / 15000 + this.currentTime / 3
+            position[0] / 3000 + this.currentTime / 2,
+            position[1] / 3000 + this.currentTime / 2
           ) +
             1) *
           Math.PI
@@ -57,13 +52,28 @@ class App {
   createDots() {
     this.dots = []
 
-    for (let i = 0; i < 3000; i++) {
+    for (let i = 0; i < 4000; i++) {
       this.dots.push(new Dot(this.canvas))
     }
   }
 
+  play() {
+    this.music.audio.play()
+    this.music.audio.muted = false
+    this.music.play = true
+
+    this.ui.center.classList.add('hidden')
+  }
+
+  pause() {
+    this.music.audio.pause()
+    this.music.play = false
+
+    this.ui.center.classList.remove('hidden')
+  }
+
   animate() {
-    requestAnimationFrame(this.animate.bind(this))
+    this.raf = requestAnimationFrame(this.animate.bind(this))
 
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height)
 
@@ -73,17 +83,24 @@ class App {
 
     this.currentTime += this.deltaTime
 
-    this.setBackground()
-    // this.setVectors()
+    const data = this.music.getData()
+    this.setBackground(data)
+
+    if (data[4] > 140) {
+      this.setVectors()
+    }
+
     if (this.music.play) {
-      const data = this.music.getData()
-      this.setDots(data)
+      const kick = data[140] > 140
+      this.setDots(data, kick)
     }
   }
 
-  setBackground() {
+  setBackground(data) {
+    const color = Math.min(20, data[4] / 5)
     this.ctx.beginPath()
-    this.ctx.fillStyle = 'black'
+    this.ctx.fillStyle = `rgb(${color}, ${color}, ${color})`
+    // this.ctx.fillStyle = 'black'
     this.ctx.rect(0, 0, this.canvas.width, this.canvas.height)
     this.ctx.fill()
     this.ctx.closePath()
@@ -93,23 +110,39 @@ class App {
     for (let i = 0; i < this.vectors.length; i++) {
       for (let j = 0; j < this.vectors[i].length; j++) {
         const vector = this.vectors[i][j]
+        const angle =
+          (this.noise.noise2D(
+            vector.position[0] / 3000 + this.currentTime / 2,
+            vector.position[1] / 3000 + this.currentTime / 2
+          ) +
+            1) *
+          Math.PI
+        vector.setAngle(angle)
+      }
+    }
+  }
+
+  debugVectors() {
+    for (let i = 0; i < this.vectors.length; i++) {
+      for (let j = 0; j < this.vectors[i].length; j++) {
+        const vector = this.vectors[i][j]
         vector.draw()
       }
     }
   }
 
-  setDots(data) {
+  setDots(data, kick = false) {
     this.dots.forEach(dot => {
       const x = Math.floor(dot.position[0] / this.grid[0])
       const y = Math.floor(dot.position[1] / this.grid[1])
       const angle = this.vectors[x][y].angle
       const direction = vec2.fromValues(
-        Math.cos(angle) * 2,
-        Math.sin(angle) * 2
+        Math.cos(angle) * 2 * Math.pow(Math.abs(data[4] - 70) / 128, 4),
+        Math.sin(angle) * 2 * Math.pow(Math.abs(data[4] - 70) / 128, 4)
       )
-      const alpha = (data[700] / 255) * 2 + 0.3
+      const alpha = (data[88] / 255) * 2 + 0.3
 
-      dot.draw(direction, angle, alpha)
+      dot.draw(direction, angle, alpha, kick)
     })
   }
 
@@ -121,6 +154,12 @@ class App {
       this.canvas.width / this.gridSize,
       this.canvas.height / this.gridSize
     )
+    this.createVectors()
+    this.createDots()
+  }
+
+  onClick() {
+    this.music.play ? this.pause() : this.play()
   }
 }
 
@@ -131,6 +170,10 @@ class Vector {
     this.angle = angle
     this.ctx = this.canvas.getContext('2d')
     this.size = 13
+  }
+
+  setAngle(angle) {
+    this.angle = angle
   }
 
   draw() {
@@ -161,9 +204,14 @@ class Dot {
     )
     this.size = Math.random() * 4 + 2
     this.alpha = Math.random() * 0.6 + 0.4
+    const velocity = Math.random() * 2
+    this.velocity = vec2.fromValues(velocity, velocity)
+    this.color = `rgba(${Math.random() * 255}, ${Math.random() *
+      255}, ${Math.random() * 255})`
   }
 
-  draw(direction, angle = 0, alpha) {
+  draw(direction, angle = 0, alpha, kick) {
+    vec2.multiply(direction, direction, this.velocity)
     vec2.add(this.position, this.position, direction)
     if (this.position[0] < 0) {
       vec2.set(this.position, this.canvas.width, this.position[1])
@@ -177,15 +225,17 @@ class Dot {
       vec2.set(this.position, this.position[0], 0)
     }
 
+    const size = kick ? Math.random() * this.size + 8 : this.size
+
     this.ctx.save()
     this.ctx.beginPath()
     this.ctx.globalAlpha = this.alpha * alpha
     this.ctx.translate(this.position[0], this.position[1])
     this.ctx.rotate(angle)
-    this.ctx.strokeStyle = 'white'
-    this.ctx.moveTo(-this.size, this.size / 2)
-    this.ctx.lineTo(this.size, this.size / 2)
-    this.ctx.lineTo(-this.size, this.size / 2)
+    this.ctx.strokeStyle = kick ? this.color : 'white'
+    this.ctx.moveTo(-size, size / 2)
+    this.ctx.lineTo(size, size / 2)
+    this.ctx.lineTo(-size, size / 2)
     this.ctx.stroke()
     this.ctx.closePath()
     this.ctx.restore()
@@ -201,7 +251,6 @@ class Music {
       window.webkitAudioContext ||
       window.mozAudioContext)()
     this.init()
-    this.events()
   }
 
   init() {
@@ -211,22 +260,9 @@ class Music {
     gainNode.connect(this.ctx.destination)
     this.analyser = this.ctx.createAnalyser()
     source.connect(this.analyser)
-    this.analyser.fftSize = 2048
+    this.analyser.fftSize = 1024
     const buffer = this.analyser.frequencyBinCount
     this.data = new Uint8Array(buffer)
-  }
-
-  events() {
-    document.addEventListener('click', () => {
-      if (!this.play) {
-        this.audio.play()
-        this.audio.muted = false
-        this.play = true
-      } else {
-        this.audio.pause()
-        this.play = false
-      }
-    })
   }
 
   getData() {
