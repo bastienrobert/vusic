@@ -163,8 +163,9 @@ class App {
 
   setDots(data, kick = false) {
     this.dots.forEach(dot => {
-      const x = Math.floor(dot.position[0] / this.grid[0])
-      const y = Math.floor(dot.position[1] / this.grid[1])
+      const x = Math.floor(dot.position[0] / this.grid[0]) % this.vectors.length
+      const y =
+        Math.floor(dot.position[1] / this.grid[1]) % this.vectors[x].length
       const angle = this.vectors[x][y].angle
       const direction = vec2.fromValues(
         Math.cos(angle) * 2 * Math.pow(Math.abs(data[4] - 70) / 128, 4),
@@ -283,7 +284,6 @@ class Dot {
 class Music {
   constructor(el, file) {
     this.audio = el
-    this.audio.src = ''
     this.audio.src = URL.createObjectURL(file)
     this.audio.crossOrigin = 'anonymous'
     this.play = false
