@@ -38,6 +38,7 @@ class App {
 
     window.addEventListener('resize', this.onResize.bind(this))
     document.addEventListener('click', this.onClick.bind(this))
+    document.addEventListener('touchstart', this.onClick.bind(this))
     document.addEventListener('mousemove', this.onMouseMove.bind(this))
     this.ui.file.addEventListener('change', this.setSong.bind(this))
     this.ui.sample.addEventListener('click', this.setSample.bind(this))
